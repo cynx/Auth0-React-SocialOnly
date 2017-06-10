@@ -9,22 +9,22 @@ export default class Auth {
     redirectUri: AUTH_CONFIG.callbackUrl,
     audience: `https://${AUTH_CONFIG.domain}/userinfo`,
     responseType: 'token id_token',
-    scope: 'openid'
+    scope: 'openid profile'
   });
+
+  userProfile;
 
   constructor() {
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
     this.handleAuthentication = this.handleAuthentication.bind(this);
     this.isAuthenticated = this.isAuthenticated.bind(this);
+    this.getAccessToken = this.getAccessToken.bind(this);
+    this.getProfile = this.getProfile.bind(this);
   }
 
   login() {
-    this.auth0.authorize({
-      theme: {
-        logo: 'http://files.gamebanana.com/img/ico/sprays/55f321400a0c0.png'
-      }
-    });
+    this.auth0.authorize();
   }
 
   handleAuthentication() {
@@ -55,7 +55,8 @@ export default class Auth {
     localStorage.removeItem('access_token');
     localStorage.removeItem('id_token');
     localStorage.removeItem('expires_at');
-    // navigate to the home route
+    this.userProfile = null;
+      // navigate to the home route
     history.replace('/home');
   }
 
@@ -65,4 +66,23 @@ export default class Auth {
     let expiresAt = JSON.parse(localStorage.getItem('expires_at'));
     return new Date().getTime() < expiresAt;
   }
+
+  getAccessToken(){
+    const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+          throw new Error('No access token found');
+      }
+      return accessToken;
+  }
+
+  getProfile(cb) {
+      let accessToken = this.getAccessToken();
+      this.auth0.client.userInfo(accessToken, (err, profile) => {
+          if (profile) {
+              this.userProfile = profile;
+          }
+          cb(err, profile);
+      });
+  }
+
 }
